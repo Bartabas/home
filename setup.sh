@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Automated setup for Pi-hole, Unbound, Home Assistant, Prometheus, Grafana, n8n, WireGuard VPN, and Portainer in Docker
+# Automated setup for Pi-hole, Unbound, Home Assistant, Prometheus, Grafana, n8n, WireGuard VPN, Portainer, Heimdall, and Dozzle in Docker
 
 # Function to check if a command exists
 command_exists() {
@@ -46,7 +46,7 @@ if ! command_exists docker-compose; then
 fi
 
 # Check required ports
-REQUIRED_PORTS=(53 80 5335 8123 9090 9100 3000 5678 51820 51821 9000)
+REQUIRED_PORTS=(53 80 5335 8080 8081 8123 9090 9100 3000 5678 51820 51821 9000)
 for PORT in "${REQUIRED_PORTS[@]}"; do
     if ! port_available "$PORT"; then
         handle_error "Port $PORT is already in use. Please free this port before continuing."
@@ -86,7 +86,7 @@ apt-get update && apt-get upgrade -y || handle_error "Failed to update system"
 
 # Create directories for persistent data
 echo "Creating directories for persistent data..."
-mkdir -p ~/docker/{pihole/etc-pihole,pihole/etc-dnsmasq.d,unbound,homeassistant,prometheus,grafana,n8n,wireguard,portainer} || handle_error "Failed to create directories"
+mkdir -p ~/docker/{pihole/etc-pihole,pihole/etc-dnsmasq.d,unbound,homeassistant,prometheus,grafana,n8n,wireguard,portainer,heimdall} || handle_error "Failed to create directories"
 
 # Generate a secure encryption key for n8n
 N8N_ENCRYPTION_KEY=$(openssl rand -hex 24)
@@ -270,6 +270,32 @@ services:
     ports:
       - "9000:9000"
     restart: unless-stopped
+    
+  heimdall:
+    image: linuxserver/heimdall:latest
+    container_name: heimdall
+    volumes:
+      - ./heimdall:/config
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Berlin
+    ports:
+      - "8080:80"
+      - "8443:443"
+    restart: unless-stopped
+    
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOZZLE_BASE=/
+      - DOZZLE_TAILSIZE=100
+    ports:
+      - "8081:8080"
+    restart: unless-stopped
 
 volumes:
   prometheus_data: {}
@@ -314,7 +340,7 @@ echo "Verifying services..."
 sleep 10
 
 # Check each container is running
-for SERVICE in pihole unbound homeassistant prometheus node-exporter grafana n8n wireguard portainer; do
+for SERVICE in pihole unbound homeassistant prometheus node-exporter grafana n8n wireguard portainer heimdall dozzle; do
     if ! docker ps | grep -q "$SERVICE"; then
         echo "WARNING: $SERVICE container may not have started properly. Check with 'docker logs $SERVICE'"
     else
@@ -365,6 +391,10 @@ curl -X POST -H "Content-Type: application/json" -d '{
   "overwrite": false
 }' http://admin:admin@localhost:3000/api/dashboards/db
 
+# Create Heimdall bookmarks for all services
+echo "Setting up Heimdall with bookmarks to your services..."
+sleep 5
+
 # Final message
 echo "============================================================="
 echo "Setup complete! Access your services:"
@@ -375,9 +405,14 @@ echo "- Grafana Dashboard: http://${DEFAULT_IP}:3000 (login with admin/admin)"
 echo "- n8n Workflow Automation: http://${DEFAULT_IP}:5678"
 echo "- WireGuard VPN UI: http://${DEFAULT_IP}:51821 (login with your chosen password)"
 echo "- Portainer UI: http://${DEFAULT_IP}:9000"
+echo "- Heimdall Dashboard: http://${DEFAULT_IP}:8080"
+echo "- Dozzle Log Viewer: http://${DEFAULT_IP}:8081"
 echo ""
 echo "Important: Please change the default passwords for Pi-hole, Grafana, n8n, and Portainer."
 echo "Your n8n encryption key is: ${N8N_ENCRYPTION_KEY} (keep this secure!)"
+echo ""
+echo "Heimdall Setup Tip: Use Heimdall to organize all your services in one dashboard."
+echo "Add each service manually with its name, URL, and icon for easy access."
 echo ""
 echo "Important for WireGuard VPN access:"
 echo "1. Ensure port 51820/UDP is forwarded on your router to your NUC's internal IP (${DEFAULT_IP})"
