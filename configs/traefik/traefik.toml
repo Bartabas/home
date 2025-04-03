@@ -1,0 +1,30 @@
+[entryPoints]
+  [entryPoints.web]
+    address = ":80"
+    [entryPoints.web.http.redirections.entryPoint]
+      to = "websecure"
+      scheme = "https"
+      permanent = true
+  
+  [entryPoints.websecure]
+    address = ":443"
+    [entryPoints.websecure.http.tls]
+      certResolver = "letsencrypt"
+
+[api]
+  dashboard = true
+  insecure = false
+
+[providers.docker]
+  endpoint = "unix:///var/run/docker.sock"
+  exposedByDefault = false
+  network = "web"
+
+[providers.file]
+  directory = "/etc/traefik/dynamic"
+  watch = true
+
+[certificatesResolvers.letsencrypt.acme]
+  email = "your-email@example.com"
+  storage = "/etc/traefik/acme/acme.json"
+  [certificatesResolvers.letsencrypt.acme.tlsChallenge]

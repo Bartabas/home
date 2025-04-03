@@ -15,6 +15,7 @@ This automation script installs and configures the following services using Dock
 - **Portainer**: Docker container management interface
 - **Heimdall**: Application dashboard to organize services
 - **Dozzle**: Live Docker container log viewer
+- **Watchtower**: Container update monitoring and notifications
 
 ![Homelab Architecture Overview]
 *Screenshot: Overview of the homelab architecture*
@@ -47,7 +48,10 @@ This automation script installs and configures the following services using Dock
    sudo ./setup.sh
    ```
 
-4. Follow the on-screen prompts (you'll need to provide your WireGuard VPN public IP or hostname and password).
+4. Follow the on-screen prompts:
+   - Provide your WireGuard VPN public IP or hostname
+   - Choose a WireGuard password
+   - Select and configure notification preferences for Watchtower
 
 ![Installation Process]
 *Screenshot: Script execution in progress*
@@ -130,6 +134,31 @@ Portainer provides a graphical interface for managing all your Docker containers
 
 ![Portainer Dashboard]
 *Screenshot: Portainer container management interface*
+
+## Update Management with Watchtower
+
+Watchtower is configured in monitor-only mode to alert you when container updates are available:
+
+- Checks for updates once per day
+- Sends notifications through your configured notification method (email, Discord, Telegram, etc.)
+- Does NOT automatically update containers
+
+### Applying Updates Manually
+
+When Watchtower notifies you of available updates, you can apply them through Portainer:
+
+1. Log in to Portainer at http://``:9000
+2. Navigate to "Containers" in the left sidebar
+3. For each container with an available update:
+   - Click on the container name
+   - Click "Recreate"
+   - Check the "Pull latest image" option
+   - Click "Recreate" to apply the update
+
+This approach gives you complete control over when updates happen, allowing you to update at convenient times and test each update before moving to the next one.
+
+![Update Management]
+*Screenshot: Manually updating containers in Portainer*
 
 ## Service Highlights
 

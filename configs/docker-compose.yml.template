@@ -1,0 +1,178 @@
+version: '3.8'
+
+networks:
+  web:
+    external: false
+  internal:
+    external: false
+
+services:
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    environment:
+      TZ: 'Europe/Berlin'
+      WEBPASSWORD: 'yourpassword'
+      DNS1: 127.0.0.1#5335
+      DNS2: 1.1.1.1
+    volumes:
+      - ./configs/pihole/etc-pihole:/etc/pihole
+      - ./configs/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "80:80/tcp"
+    restart: unless-stopped
+    network_mode: host
+
+  unbound:
+    image: mvance/unbound:latest
+    container_name: unbound
+    volumes:
+      - ./configs/unbound:/opt/unbound/etc/unbound/
+    ports:
+      - "5335:5335/tcp"
+      - "5335:5335/udp"
+    restart: unless-stopped
+
+  homeassistant:
+    image: homeassistant/home-assistant:stable
+    container_name: homeassistant
+    volumes:
+      - ./configs/homeassistant:/config
+    environment:
+      TZ: 'Europe/Berlin'
+    ports:
+      - "8123:8123"
+    restart: unless-stopped
+    
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./configs/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
+    ports:
+      - "9100:9100"
+    restart: unless-stopped
+    
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    environment:
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - N8N_HOST=localhost
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - WEBHOOK_URL=http://localhost:5678/
+      - TZ=Europe/Berlin
+    volumes:
+      - ./configs/n8n:/home/node/.n8n
+    ports:
+      - "5678:5678"
+    restart: unless-stopped
+    
+  wireguard:
+    image: ghcr.io/wg-easy/wg-easy:latest
+    container_name: wireguard
+    environment:
+      - WG_HOST=${WG_HOST}
+      - PASSWORD=${WG_PASSWORD}
+      - WG_PORT=51820
+      - WG_DEFAULT_ADDRESS=10.8.0.x
+      - WG_DEFAULT_DNS=${DEFAULT_IP}
+      - TZ=Europe/Berlin
+    volumes:
+      - ./configs/wireguard:/etc/wireguard
+    ports:
+      - "51820:51820/udp"
+      - "51821:51821/tcp"
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.src_valid_mark=1
+    restart: unless-stopped
+    
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    ports:
+      - "9000:9000"
+    restart: unless-stopped
+    
+  heimdall:
+    image: linuxserver/heimdall:latest
+    container_name: heimdall
+    volumes:
+      - ./configs/heimdall:/config
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Berlin
+    ports:
+      - "8080:80"
+      - "8443:443"
+    restart: unless-stopped
+    
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOZZLE_BASE=/
+      - DOZZLE_TAILSIZE=100
+    ports:
+      - "8081:8080"
+    restart: unless-stopped
+    
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_MONITOR_ONLY=true
+      - WATCHTOWER_POLL_INTERVAL=86400
+      - TZ=Europe/Berlin
+
+volumes:
+  prometheus_data: {}
+  grafana_data: {}
+  portainer_data: {}
