@@ -1,10 +1,12 @@
-# Homelab Automation Script
+# Homelab Automation Suite
 
-This script sets up a complete homelab environment with network monitoring, DNS ad-blocking, home automation, and remote access capabilities on an Intel NUC or similar hardware.
+This repository contains a set of modular scripts to automate the deployment of a complete homelab environment using Docker containers. The system provides network monitoring, DNS ad-blocking, home automation, and secure remote access capabilities.
+
+![Homelab Logo]
 
 ## Overview
 
-This automation script installs and configures the following services using Docker:
+This automation script installs and configures the following services:
 
 - **Pi-hole**: Network-wide ad blocker and DNS server
 - **Unbound**: Recursive DNS resolver for enhanced privacy
@@ -15,10 +17,7 @@ This automation script installs and configures the following services using Dock
 - **Portainer**: Docker container management interface
 - **Heimdall**: Application dashboard to organize services
 - **Dozzle**: Live Docker container log viewer
-- **Watchtower**: Container update monitoring and notifications
-
-![Homelab Architecture Overview]
-*Screenshot: Overview of the homelab architecture*
+- **Watchtower**: Container update monitoring (monitor-only mode)
 
 ## System Requirements
 
@@ -28,17 +27,15 @@ This automation script installs and configures the following services using Dock
 - **Storage**: At least 30GB free space
 - **Network**: Static IP address recommended
 
-![Hardware Requirements]
-*Screenshot: Example of compatible hardware*
-
 ## Installation
 
-1. Download the script:
+1. Clone this repository:
    ```bash
-   curl -O https://raw.githubusercontent.com/yourusername/homelab/main/setup.sh
+   git clone https://github.com/Bartabas/homelab.git
+   cd homelab
    ```
 
-2. Make the script executable:
+2. Make the setup script executable:
    ```bash
    chmod +x setup.sh
    ```
@@ -48,191 +45,111 @@ This automation script installs and configures the following services using Dock
    sudo ./setup.sh
    ```
 
-4. Follow the on-screen prompts:
-   - Provide your WireGuard VPN public IP or hostname
-   - Choose a WireGuard password
-   - Select and configure notification preferences for Watchtower
-
-![Installation Process]
-*Screenshot: Script execution in progress*
+4. Follow the on-screen prompts to configure your homelab environment.
 
 ## What The Script Does
 
-1. Checks system requirements and installed dependencies
-2. Detects your network configuration
-3. Installs Docker and Docker Compose if not already present
-4. Creates the necessary directory structure
-5. Generates configuration files for all services
-6. Downloads and starts the Docker containers
-7. Configures initial integrations between services
-8. Verifies that all services are running correctly
-9. Provides access URLs and credentials for each service
+The setup is organized into modular components:
 
-![Script Completion]
-*Screenshot: Successful script completion*
+1. **System Requirements Check**: Verifies your hardware meets the minimum requirements
+2. **Service Configuration**: Guides you through configuring each service
+3. **Docker Setup**: Installs Docker and Docker Compose if needed
+4. **HTTPS Configuration**: Sets up Traefik reverse proxy with Let's Encrypt
+5. **Backup System**: Configures automated backups with rotation
+6. **Service Deployment**: Pulls and starts all Docker containers
+7. **Finalization**: Creates documentation and quick reference guides
 
 ## Accessing Your Services
 
-After installation, you can access your services at the following URLs (replace `` with your system's IP address):
+After installation, you can access your services at:
 
-- **Pi-hole**: http://``/admin (default password: yourpassword)
-- **Home Assistant**: http://``:8123
-- **Prometheus**: http://``:9090
-- **Grafana**: http://``:3000 (login: admin/admin)
-- **n8n**: http://``:5678
-- **WireGuard VPN**: http://``:51821 (use your specified password)
-- **Portainer**: http://``:9000
-- **Heimdall**: http://``:8080
-- **Dozzle**: http://``:8081
+- **Pi-hole**: http://your-server-ip/admin
+- **Home Assistant**: http://your-server-ip:8123
+- **Prometheus**: http://your-server-ip:9090
+- **Grafana**: http://your-server-ip:3000
+- **n8n**: http://your-server-ip:5678
+- **WireGuard VPN**: http://your-server-ip:51821
+- **Portainer**: http://your-server-ip:9000
+- **Heimdall**: http://your-server-ip:8080
+- **Dozzle**: http://your-server-ip:8081
 
-![Heimdall Dashboard]
-*Screenshot: Heimdall dashboard with all services*
+When HTTPS is configured, you can also use secure versions of these URLs.
 
-## Post-Installation Steps
+## Configuration
 
-1. **Update Default Passwords**: Change the default passwords for Pi-hole, Grafana, Portainer, and WireGuard.
+The script creates a configuration file at `~/homelab/homelab.conf` with your settings. You can:
 
-   ![Password Update Example]
-   *Screenshot: Updating passwords in different services*
+- Modify resource allocations based on your hardware capabilities
+- Change default passwords
+- Configure notification preferences for container updates
+- Adjust backup retention periods
 
-2. **Configure Heimdall**: Add your services to Heimdall by:
-   - Accessing Heimdall at http://``:8080
-   - Clicking "Add Application"
-   - Selecting applications from the preset list or creating custom entries
-   - Entering the appropriate URLs for each service
+## Maintenance
 
-   ![Heimdall Configuration]
-   *Screenshot: Adding applications to Heimdall*
+### Updating Containers
 
-3. **Set Up WireGuard VPN Clients**:
-   - Access the WireGuard interface at http://``:51821
-   - Create client configurations for your devices
-   - Download the WireGuard client app on your devices
-   - Import the configuration or scan the QR code
+Watchtower is configured in monitor-only mode and will notify you of available updates. To apply updates:
 
-   ![WireGuard Setup]
-   *Screenshot: WireGuard web interface*
-
-4. **Configure Port Forwarding**: For remote access, forward port 51820/UDP on your router to your NUC's IP address.
-
-   ![Port Forwarding]
-   *Screenshot: Router port forwarding configuration*
-
-## Docker Management with Portainer
-
-Portainer provides a graphical interface for managing all your Docker containers:
-
-1. Access Portainer at http://``:9000
-2. Create an admin password on first login
-3. Select "Local" environment
-4. Use the dashboard to:
-   - Monitor container health
-   - View logs
-   - Restart services
-   - Update containers
-   - Manage volumes and networks
-
-![Portainer Dashboard]
-*Screenshot: Portainer container management interface*
-
-## Update Management with Watchtower
-
-Watchtower is configured in monitor-only mode to alert you when container updates are available:
-
-- Checks for updates once per day
-- Sends notifications through your configured notification method (email, Discord, Telegram, etc.)
-- Does NOT automatically update containers
-
-### Applying Updates Manually
-
-When Watchtower notifies you of available updates, you can apply them through Portainer:
-
-1. Log in to Portainer at http://``:9000
-2. Navigate to "Containers" in the left sidebar
-3. For each container with an available update:
-   - Click on the container name
-   - Click "Recreate"
-   - Check the "Pull latest image" option
-   - Click "Recreate" to apply the update
-
-This approach gives you complete control over when updates happen, allowing you to update at convenient times and test each update before moving to the next one.
-
-![Update Management]
-*Screenshot: Manually updating containers in Portainer*
-
-## Service Highlights
-
-### Pi-hole and Unbound
-
-Block ads and trackers at the DNS level while enhancing privacy with recursive DNS resolution.
-
-![Pi-hole Dashboard]
-*Screenshot: Pi-hole admin interface showing blocked queries*
-
-### Home Assistant
-
-Control and automate your smart home devices from a single, powerful interface.
-
-![Home Assistant]
-*Screenshot: Home Assistant dashboard with device controls*
-
-### Prometheus and Grafana
-
-Monitor your system performance and network traffic with detailed graphs and alerts.
-
-![Grafana Dashboard]
-*Screenshot: Grafana displaying system metrics*
-
-### n8n Workflow Automation
-
-Create powerful automation workflows connecting your various homelab services.
-
-![n8n Workflows]
-*Screenshot: n8n workflow editor*
-
-## Troubleshooting
-
-- **Container not starting**: Check container logs via Dozzle or with `docker logs container_name`
-- **Service not accessible**: Verify that ports are not blocked by a firewall
-- **Configuration issues**: Most service configurations are stored in the `~/docker` directory
-- **Space issues**: Use `docker system prune` to remove unused Docker resources
-
-![Dozzle Log Viewer]
-*Screenshot: Viewing container logs in Dozzle*
-
-## Additional Resources
-
-- Home Assistant documentation: https://www.home-assistant.io/docs/
-- Pi-hole documentation: https://docs.pi-hole.net/
-- Portainer documentation: https://docs.portainer.io/
-- n8n documentation: https://docs.n8n.io/
-
-## Advanced Configuration
-
-The script creates a Docker Compose configuration at `~/docker/docker-compose.yml`. You can modify this file to:
-- Change port mappings
-- Add environment variables
-- Modify volume mounts
-- Add new services
-
-After any changes, apply them with:
 ```bash
-cd ~/docker
+cd ~/homelab
+docker-compose pull
 docker-compose up -d
 ```
 
-![Docker Compose Configuration]
-*Screenshot: Example of modified docker-compose.yml file*
+Alternatively, use Portainer's web interface to update individual containers.
+
+### Backup and Restore
+
+Run a manual backup:
+```bash
+~/homelab/backup.sh
+```
+
+Backups are stored in `~/homelab/backups` and are automatically rotated based on your retention settings.
+
+## Directory Structure
+
+```
+homelab/
+├── backup/                # Backup scripts
+│   ├── backup.sh          # Main backup script
+│   └── rotate_backups.sh  # Backup rotation script
+├── configs/               # Configuration templates
+│   ├── homeassistant/     # Home Assistant config
+│   ├── prometheus/        # Prometheus config
+│   ├── traefik/           # Traefik config
+│   ├── unbound/           # Unbound DNS config
+│   └── docker-compose.yml.template
+├── modules/               # Script modules
+│   ├── check_requirements.sh
+│   ├── common.sh
+│   ├── finalize.sh
+│   ├── setup_backups.sh
+│   ├── setup_configs.sh
+│   ├── setup_docker.sh
+│   ├── setup_services.sh
+│   └── setup_traefik.sh
+└── setup.sh               # Main installer script
+```
+
+## Troubleshooting
+
+- **Container not starting**: Check logs with `docker logs container_name`
+- **Service not accessible**: Verify that ports are not blocked by a firewall
+- **Configuration issues**: Review files in the `~/homelab/configs` directory
 
 ## Security Considerations
 
-- This setup includes multiple web interfaces - consider setting up HTTPS for increased security
-- Regularly update container images for security patches
-- Use strong, unique passwords for all services
-- Consider network segmentation for IoT devices
+- All generated passwords are stored in the quick reference guide
+- Consider setting up a firewall to restrict access to sensitive ports
+- WireGuard provides secure remote access to your homelab
+- Traefik can be configured with Let's Encrypt for HTTPS access
 
-![Security Updates]
-*Screenshot: Updating container images for security*
+## License
 
----
-Answer from Perplexity: pplx.ai/share
+This project is released under the MIT License.
+
+## Acknowledgments
+
+This project was inspired by various homelab setups and enhanced with modern container management practices.
+
