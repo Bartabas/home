@@ -23,8 +23,8 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 # Create installation directory
-INSTALL_DIR="${HOME}/homelab"
-mkdir -p "${INSTALL_DIR}"
+INSTALL_DIR="${SCRIPT_DIR}"
+
 
 # 1. Check system requirements
 echo "Step 1: Checking system requirements and hardware capabilities..."

@@ -12,7 +12,7 @@ services:
     container_name: pihole
     environment:
       TZ: 'Europe/Berlin'
-      WEBPASSWORD: 'yourpassword'
+      WEBPASSWORD: '${PIHOLE_PASSWORD}'
       DNS1: 127.0.0.1#5335
       DNS2: 1.1.1.1
     volumes:
@@ -24,6 +24,12 @@ services:
       - "80:80/tcp"
     restart: unless-stopped
     network_mode: host
+    deploy:
+      resources:
+        limits:
+          memory: ${PIHOLE_MEM_LIMIT}
+    labels:
+      - "homelab.backup=true"
 
   unbound:
     image: mvance/unbound:latest
@@ -34,6 +40,12 @@ services:
       - "5335:5335/tcp"
       - "5335:5335/udp"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${UNBOUND_MEM_LIMIT}
+    labels:
+      - "homelab.backup=true"
 
   homeassistant:
     image: homeassistant/home-assistant:stable
@@ -45,6 +57,12 @@ services:
     ports:
       - "8123:8123"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${HOMEASSISTANT_MEM_LIMIT}
+    labels:
+      - "homelab.backup=true"
     
   prometheus:
     image: prom/prometheus:latest
@@ -60,6 +78,12 @@ services:
     ports:
       - "9090:9090"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${PROMETHEUS_MEM_LIMIT}
+    labels:
+      - "homelab.backup=true"
     
   node-exporter:
     image: prom/node-exporter:latest
@@ -82,10 +106,16 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
     ports:
       - "3000:3000"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${GRAFANA_MEM_LIMIT}
+    labels:
+      - "homelab.backup=true"
     
   n8n:
     image: n8nio/n8n:latest
@@ -102,6 +132,12 @@ services:
     ports:
       - "5678:5678"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${N8N_MEM_LIMIT}
+    labels:
+      - "homelab.backup=true"
     
   wireguard:
     image: ghcr.io/wg-easy/wg-easy:latest
@@ -125,6 +161,8 @@ services:
       - net.ipv4.ip_forward=1
       - net.ipv4.conf.all.src_valid_mark=1
     restart: unless-stopped
+    labels:
+      - "homelab.backup=true"
     
   portainer:
     image: portainer/portainer-ce:latest
@@ -135,6 +173,8 @@ services:
     ports:
       - "9000:9000"
     restart: unless-stopped
+    labels:
+      - "homelab.backup=true"
     
   heimdall:
     image: linuxserver/heimdall:latest
@@ -149,6 +189,8 @@ services:
       - "8080:80"
       - "8443:443"
     restart: unless-stopped
+    labels:
+      - "homelab.backup=true"
     
   dozzle:
     image: amir20/dozzle:latest
@@ -170,9 +212,19 @@ services:
     environment:
       - WATCHTOWER_MONITOR_ONLY=true
       - WATCHTOWER_POLL_INTERVAL=86400
+      - WATCHTOWER_NOTIFICATION_REPORT=long
+      - WATCHTOWER_NOTIFICATIONS=shoutrrr
+      - WATCHTOWER_NOTIFICATION_URL=${NOTIFICATION_URL}
       - TZ=Europe/Berlin
+    restart: unless-stopped
 
 volumes:
-  prometheus_data: {}
-  grafana_data: {}
-  portainer_data: {}
+  prometheus_data:
+    labels:
+      - "homelab.backup=true"
+  grafana_data:
+    labels:
+      - "homelab.backup=true"
+  portainer_data:
+    labels:
+      - "homelab.backup=true"

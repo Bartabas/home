@@ -1,0 +1,9 @@
+[http.routers.traefik]
+  rule = "Host(`traefik.example.com`)"
+  entryPoints = ["websecure"]
+  service = "api@internal"
+  [http.routers.traefik.middlewares]
+    middlewares = ["auth"]
+  
+[http.middlewares.auth.basicAuth]
+  users = ["admin:$apr1$H6uskkkW$IgXLP6ewTrSuBkTrqE8wj/"]
